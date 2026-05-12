@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Task Manager</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, sans-serif;
+    }
+
+    body{
+      background:#0f172a;
+      color:white;
+      min-height:100vh;
+      padding:30px;
+      transition:0.3s;
+    }
+
+    body.light{
+      background:#f1f5f9;
+      color:black;
+    }
+
+    .container{
+      max-width:900px;
+      margin:auto;
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:25px;
+      color:#38bdf8;
+    }
+
+    .top-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .task-form{
+      background:#1e293b;
+      padding:20px;
+      border-radius:12px;
+      margin-bottom:20px;
+    }
+
+    body.light .task-form{
+      background:white;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px;
+      margin:10px 0;
+      border:none;
+      border-radius:8px;
+      outline:none;
+    }
+
+    button{
+      padding:12px 18px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    .add-btn{
+      background:#38bdf8;
+      color:white;
+      width:100%;
+    }
+
+    .theme-btn{
+      background:black;
+      color:white;
+    }
+
+    .filters{
+      display:flex;
+      gap:10px;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
+
+    .filters button{
+      background:#334155;
+      color:white;
+    }
+
+    .task-list{
+      display:grid;
+      gap:15px;
+    }
+
+    .task{
+      background:#1e293b;
+      padding:18px;
+      border-radius:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    body.light .task{
+      background:white;
+    }
+
+    .task.completed{
+      opacity:0.6;
+      text-decoration:line-through;
+    }
+
+    .task-info{
+      flex:1;
+    }
+
+    .priority{
+      padding:5px 10px;
+      border-radius:20px;
+      font-size:12px;
+      font-weight:bold;
+    }
+
+    .high{
+      background:red;
+    }
+
+    .medium{
+      background:orange;
+    }
+
+    .low{
+      background:green;
+    }
+
+    .actions button{
+      margin-left:5px;
+    }
+
+    .complete-btn{
+      background:#22c55e;
+      color:white;
+    }
+
+    .delete-btn{
+      background:#ef4444;
+      color:white;
+    }
+
+    .search{
+      flex:1;
+      min-width:200px;
+    }
+
+    @media(max-width:600px){
+      .task{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="top-bar">
+      <h1>Smart Task Manager</h1>
+      <button class="theme-btn" onclick="toggleTheme()">Toggle Theme</button>
+    </div>
+
+    <div class="task-form">
+      <input type="text" id="taskInput" placeholder="Enter Task">
+
+      <select id="priority">
+        <option value="High">High Priority</option>
+        <option value="Medium">Medium Priority</option>
+        <option value="Low">Low Priority</option>
+      </select>
+
+      <input type="date" id="dueDate">
+
+      <button class="add-btn" onclick="addTask()">Add Task</button>
+    </div>
+
+    <div class="top-bar">
+      <input
+        type="text"
+        id="searchInput"
+        class="search"
+        placeholder="Search tasks..."
+        onkeyup="searchTasks()"
+      >
+    </div>
+
+    <div class="filters">
+      <button onclick="filterTasks('all')">All</button>
+      <button onclick="filterTasks('completed')">Completed</button>
+      <button onclick="filterTasks('pending')">Pending</button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+
+  </div>
+
+  <script>
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let currentFilter = "all";
+
+    function saveTasks(){
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function addTask(){
+
+      const taskInput = document.getElementById("taskInput");
+      const priority = document.getElementById("priority").value;
+      const dueDate = document.getElementById("dueDate").value;
+
+      if(taskInput.value.trim() === ""){
+        alert("Please enter task");
+        return;
+      }
+
+      const task = {
+        text: taskInput.value,
+        priority: priority,
+        dueDate: dueDate,
+        completed:false
+      };
+
+      tasks.push(task);
+
+      saveTasks();
+      renderTasks();
+
+      taskInput.value = "";
+      dueDate.value = "";
+    }
+
+    function renderTasks(){
+
+      const taskList = document.getElementById("taskList");
+      taskList.innerHTML = "";
+
+      let filteredTasks = tasks;
+
+      if(currentFilter === "completed"){
+        filteredTasks = tasks.filter(task => task.completed);
+      }
+
+      if(currentFilter === "pending"){
+        filteredTasks = tasks.filter(task => !task.completed);
+      }
+
+      filteredTasks.forEach((task,index)=>{
+
+        const taskDiv = document.createElement("div");
+
+        taskDiv.classList.add("task");
+
+        if(task.completed){
+          taskDiv.classList.add("completed");
+        }
+
+        let priorityClass = "";
+
+        if(task.priority === "High"){
+          priorityClass = "high";
+        }
+
+        if(task.priority === "Medium"){
+          priorityClass = "medium";
+        }
+
+        if(task.priority === "Low"){
+          priorityClass = "low";
+        }
+
+        taskDiv.innerHTML = `
+          <div class="task-info">
+            <h3>${task.text}</h3>
+            <p>Due: ${task.dueDate || "No date"}</p>
+            <span class="priority ${priorityClass}">
+              ${task.priority}
+            </span>
+          </div>
+
+          <div class="actions">
+            <button class="complete-btn"
+              onclick="toggleComplete(${index})">
+              ${task.completed ? "Undo" : "Complete"}
+            </button>
+
+            <button class="delete-btn"
+              onclick="deleteTask(${index})">
+              Delete
+            </button>
+          </div>
+        `;
+
+        taskList.appendChild(taskDiv);
+
+      });
+
+    }
+
+    function toggleComplete(index){
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks();
+      renderTasks();
+    }
+
+    function deleteTask(index){
+      tasks.splice(index,1);
+      saveTasks();
+      renderTasks();
+    }
+
+    function filterTasks(type){
+      currentFilter = type;
+      renderTasks();
+    }
+
+    function searchTasks(){
+
+      const searchValue =
+        document.getElementById("searchInput")
+        .value
+        .toLowerCase();
+
+      const taskElements = document.querySelectorAll(".task");
+
+      taskElements.forEach(task => {
+
+        const text = task.innerText.toLowerCase();
+
+        if(text.includes(searchValue)){
+          task.style.display = "flex";
+        }
+        else{
+          task.style.display = "none";
+        }
+
+      });
+
+    }
+
+    function toggleTheme(){
+      document.body.classList.toggle("light");
+    }
+
+    renderTasks();
+
+  </script>
+
+</body>
+</html>
